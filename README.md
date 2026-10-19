@@ -45,38 +45,76 @@ DSH 官方的 `@deepseek-ai/dsh-mcp-client` 每个实例只连**一个**服务�
 
 ## 安装
 
+两种形态：**让 Agent 装**（最省事）或**自己装**（一条命令 / 纯手工）。三种方式结果一样。
+
+前提：
+
+- DSH `>= 0.2.1-rc.2`（需要 Harness 自带的 `@deepseek-ai/dsh-mcp-client`）
+- Node >= 20
+- 知道自己的 profile 目录：`~/.dsh/profiles/<profile>/`
+  （Windows：`C:\Users\<你>\.dsh\profiles\<profile>\`，桌面版通常是 `desktop`）
+
+### 方式 1：让 Agent 帮你装（推荐）
+
+把下面整段复制给你的 DSH 助手：
+
+```text
+请帮我安装并启用 DSH 插件 dsh-mcp-manager：https://github.com/nekojackie/dsh-mcp-manager
+
+1. 克隆到 ~/.dsh/plugins/dsh-mcp-manager（Windows：C:\Users\<用户名>\.dsh\plugins\dsh-mcp-manager）；
+2. 用 plugin_manager 的 install_bundle 安装，target 指向该目录，装到当前 profile；
+3. 如果 install_bundle 不可用：手动在 profile 的 package.json 里把
+   "dsh-mcp-manager": "link:<该目录绝对路径>" 加进 dependencies，并把 "dsh-mcp-manager"
+   加进 dsh.profile.bundles；再在 profile 的 cordis.patch.yml 末尾追加一条 id 为 mcp-manager
+   的 insert 行（config: { servers: [] }）；然后在 profile 目录执行 pnpm install，最后重启 DSH；
+4. 装完确认：插件行状态是 active、设置里出现「设置 → 插件 → MCP 服务器」页签；
+5. 用 mcp_manager_list 把当前清单贴给我；
+6. 不要改动我已有的 MCP 服务器配置。
+
+注意：这是 AI 生成的插件，OAuth token 会写进 DSH 凭据库，安装前请先看一眼 README 的安全说明。
+```
+
+### 方式 2：一条命令装
+
 ```bash
-git clone https://github.com/nekojackie/dsh-mcp-manager.git
+git clone https://github.com/nekojackie/dsh-mcp-manager.git ~/.dsh/plugins/dsh-mcp-manager
 ```
 
-前提：DSH（>= `0.2.1-rc.2`，随 Harness 一起提供的 `@deepseek-ai/dsh-mcp-client`）、Node >= 20。
-本仓库是一个 **DSH bundle**（`dsh.bundle.patch` + `dsh.client`），Host 与 Web 两半都在 `lib/`。
-
-### 方式 A：用 DSH 的插件管理器安装（推荐）
-
-在 DSH 会话里让 agent 调用 `plugin_manager`：
+然后在 DSH 会话里让 agent 调用 `plugin_manager`：
 
 ```jsonc
-{ "action": "install_bundle", "target": "<本仓库的绝对路径>" }
+{ "action": "install_bundle", "target": "/home/<you>/.dsh/plugins/dsh-mcp-manager" }
+// Windows: "target": "C:/Users/<you>/.dsh/plugins/dsh-mcp-manager"
 ```
 
-`install_bundle` 会把包装进当前 profile、运行 pnpm、并把 bundle 加进 `dsh.profile.bundles`。
+`install_bundle` 会把包加进当前 profile、跑 pnpm，并把 bundle 写进 `dsh.profile.bundles`。
 
-### 方式 B：手动链接（开发时更顺手）
+### 方式 3：完全手动安装
 
-把仓库放到任意位置，然后：
+不需要 `plugin_manager`，适合离线、或想自己掌控 profile 的情况。
+
+```bash
+# 1) 取代码（或直接下载 zip 解压到同一处）
+git clone https://github.com/nekojackie/dsh-mcp-manager.git ~/.dsh/plugins/dsh-mcp-manager
+```
 
 ```jsonc
-// ~/.dsh/profiles/<profile>/package.json
+// 2) 编辑 ~/.dsh/profiles/<profile>/package.json
 {
-  "dependencies": { "dsh-mcp-manager": "link:<本仓库的绝对路径>" },
-  "dsh": { "profile": { "bundles": ["...原有 bundles...", "dsh-mcp-manager"] } }
+  "dependencies": {
+    "dsh-mcp-manager": "link:/home/<you>/.dsh/plugins/dsh-mcp-manager"
+    // Windows 用正斜杠： "link:C:/Users/<you>/.dsh/plugins/dsh-mcp-manager"
+  },
+  "dsh": {
+    "profile": {
+      "bundles": ["...保留原有 bundles...", "dsh-mcp-manager"]
+    }
+  }
 }
 ```
 
-再在 `~/.dsh/profiles/<profile>/cordis.patch.yml` 末尾加：
-
 ```yaml
+# 3) 在 ~/.dsh/profiles/<profile>/cordis.patch.yml 末尾追加
 - insert:
     - id: mcp-manager
       name: dsh-mcp-manager
@@ -84,7 +122,21 @@ git clone https://github.com/nekojackie/dsh-mcp-manager.git
         servers: []
 ```
 
-然后重装依赖并重启 DSH。
+```bash
+# 4) 装依赖（用了 link: 所以不会重复下载包）
+cd ~/.dsh/profiles/<profile>
+pnpm install
+```
+
+5. **重启 DSH**（不是刷新页面）。
+
+### 装完怎么验收
+
+1. 设置 → 插件 → 列表里能看到 **MCP Server Manager**（行 id `mcp-manager`，状态 active）；
+2. 设置 → 插件 → 出现 **MCP 服务器** 页签；
+3. 对 agent 说「列出 MCP 服务器」，它会调用 `mcp_manager_list`；
+4. 想空跑验证：把仓库里的 `fixtures/mock-mcp-server.mjs` 当作 `stdio` 服务器加进去
+   （`command: node`，`args: [<该文件绝对路径>]`），应当出现 `mcp__<服务器名>__echo` 工具。
 
 > ⚠️ 改了 `lib/*.js` 之后，DSH **不会**热替换已加载的模块：用
 > `plugin_manager set_bundle { "enabled": false }` → `true` 重新加载，或重启 DSH。
@@ -104,7 +156,8 @@ git clone https://github.com/nekojackie/dsh-mcp-manager.git
 
 > 帮我加一个 MCP 服务器 demo，命令是 `npx -y @modelcontextprotocol/server-everything`\
 > 现在有哪些 MCP 服务器？各自暴露了哪些工具，描述是什么？\
-> 把 Xmind 停掉，再重新授权一次
+> 把 docs 这个 MCP 服务器停掉，再重新授权一次\
+> 自动续期改成每 2 分钟检查、提前 5 分钟续期
 
 ### 直接改配置
 
@@ -143,8 +196,8 @@ git clone https://github.com/nekojackie/dsh-mcp-manager.git
 
 ## OAuth 2.1 授权
 
-受 OAuth 保护的 `streamable-http` 服务器（例如 Xmind 的 `https://app.xmind.com/api/mcp`，其
-`/.well-known/oauth-protected-resource` 声明 `required_scopes: ["mcp:connect"]`）不再需要手工复制 token：
+受 OAuth 保护的 `streamable-http` 服务器（其 `/.well-known/oauth-protected-resource` 会声明
+`authorization_servers` 与 `required_scopes`）不再需要手工复制 token：
 
 1. 编辑服务器，勾选 **使用 OAuth 授权**，保存；
 2. 卡片上点 **授权（浏览器）** → 插件完成发现 + 动态注册 + PKCE，返回授权链接并在浏览器打开；
@@ -200,8 +253,8 @@ fixtures/*.mjs  本地测试夹具：假 MCP 服务器（stdio / HTTP）、OAuth
 
 ## 安全说明
 
-- **OAuth token 只进 DSH 凭据库** `~/.dsh/.credentials.yaml`，记录键 `mcp-manager/<slug>`（如
-  `mcp-manager/xmind`）。不写进 `cordis.patch.yml`、不返回给页面、不进 agent 上下文、不写日志。
+- **OAuth token 只进 DSH 凭据库** `~/.dsh/.credentials.yaml`，记录键 `mcp-manager/<slug>`
+  （服务器名 `docs` → `mcp-manager/docs`）。不写进 `cordis.patch.yml`、不返回给页面、不进 agent 上下文、不写日志。
 - 页面拿到的只有：是否已授权、过期时间、scope、`clientSecretSet`（是否已保存）。
 - 桥接路由只接受**回环**请求；除 OAuth 回调（GET，仅回环）外均只接受 POST。
 - `clientSecret`、`headers`、`env` 属于配置，会留在 profile patch 里——共享机器请优先用凭据中心的环境变量。
