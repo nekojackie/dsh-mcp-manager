@@ -1,7 +1,15 @@
 {
   "name": "dsh-mcp-manager",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Manage MCP servers from inside DeepSeek Harness: add, enable/disable, remove, reconnect, authorize with OAuth 2.1, renew tokens on a schedule whose policy is editable in the UI, renew after expiry, and browse every MCP tool with its description.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nekojackie/dsh-mcp-manager.git"
+  },
+  "homepage": "https://github.com/nekojackie/dsh-mcp-manager#readme",
+  "bugs": {
+    "url": "https://github.com/nekojackie/dsh-mcp-manager/issues"
+  },
   "type": "module",
   "main": "lib/index.js",
   "exports": {

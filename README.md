@@ -45,6 +45,10 @@ DSH 官方的 `@deepseek-ai/dsh-mcp-client` 每个实例只连**一个**服务�
 
 ## 安装
 
+```bash
+git clone https://github.com/nekojackie/dsh-mcp-manager.git
+```
+
 前提：DSH（>= `0.2.1-rc.2`，随 Harness 一起提供的 `@deepseek-ai/dsh-mcp-client`）、Node >= 20。
 本仓库是一个 **DSH bundle**（`dsh.bundle.patch` + `dsh.client`），Host 与 Web 两半都在 `lib/`。
 
