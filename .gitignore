@@ -1,0 +1,24 @@
+# dependencies
+node_modules/
+pnpm-lock.yaml
+
+# build output
+dist/
+*.tsbuildinfo
+
+# logs / caches
+*.log
+npm-debug.log*
+pnpm-debug.log*
+.DS_Store
+Thumbs.db
+
+# local secrets
+.env
+.env.*
+*.token
+.gh-token
+
+# editors
+.vscode/
+.idea/

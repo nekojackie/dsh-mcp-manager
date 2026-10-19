@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "MCP Server Manager",
+    "description": "Add, enable, disable and remove MCP servers, and browse every tool they expose together with its description."
+  }
+}

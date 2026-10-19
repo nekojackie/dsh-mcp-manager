@@ -1,0 +1,26 @@
+# dsh-mcp-manager — manage MCP servers from inside DeepSeek Harness.
+#
+# One row owns the whole feature. `servers` is the managed roster; every entry is
+# spawned as a real @deepseek-ai/dsh-mcp-client instance, so each server's tools
+# become ordinary `mcp__<name>__<tool>` tools of this Harness.
+#
+# Manage the roster from Settings -> Plugins -> "MCP Servers", from the agent
+# tools `mcp_manager_*`, or by editing this `config` by hand, e.g.:
+#
+#   servers:
+#     - name: demo                       # ^[A-Za-z0-9_-]{1,32}$
+#       enabled: true
+#       transport: stdio                 # or streamable-http
+#       command: npx
+#       args: ['-y', '@modelcontextprotocol/server-everything']
+#     - name: docs
+#       enabled: true
+#       transport: streamable-http
+#       url: http://127.0.0.1:3000/mcp
+#
+# `enabled: false` keeps an entry saved but disconnected.
+- insert:
+    - id: mcp-manager
+      name: dsh-mcp-manager
+      config:
+        servers: []

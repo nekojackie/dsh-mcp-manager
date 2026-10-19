@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "MCP 服务器管理器",
+    "description": "在 DeepSeek Harness 内添加、启停、移除 MCP 服务器，并查看每个服务器提供的工具及其描述。"
+  }
+}
