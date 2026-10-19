@@ -1,0 +1,9 @@
+# Keep line endings stable across Windows / macOS / Linux checkouts.
+# The plugin ships plain JS + YAML + Markdown; none of it needs CRLF.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff binary
+*.woff2 binary
