@@ -45,139 +45,39 @@ DSH 官方的 `@deepseek-ai/dsh-mcp-client` 每个实例只连**一个**服务�
 
 ## 安装
 
-**一条命令，三个平台完全一样**（DSH 自带 `dsh` CLI）：
+### 方式 1：一条命令
 
 ```sh
 git clone https://github.com/nekojackie/dsh-mcp-manager.git
-dsh plugin --profile <profile> add /绝对路径/dsh-mcp-manager
-dsh <profile>          # 或在桌面版里重启 DSH
+dsh plugin --profile <profile> add /path/to/dsh-mcp-manager
+dsh <profile>
 ```
 
-`dsh plugin add` 一次做完三件事（我在这台机器上实测过）：在 profile 目录里执行 `pnpm add`、
-把包写进 `package.json` 的 `dsh.profile.bundles`、首次使用时初始化 profile。
-插件自己的 patch 行（`id: mcp-manager`）由 bundle 自带的 `cordis.patch.yml` 插入，
-**不需要手写任何 YAML**；用 `dsh --profile <profile> --dump-config` 能看到 `# == dsh-mcp-manager`。
+`dsh plugin add` 会在 profile 里装包，并自动把 bundle 写进 `dsh.profile.bundles`；
+`mcp-manager` 这行配置由 bundle 自带的 patch 插入，**不用手写 YAML**。
 
-| 平台 | `dsh` 在哪 | profile 目录 | 传给 `add` 的路径 |
-| --- | --- | --- | --- |
-| Windows | `<安装目录>\resources\runtime\cli\bin\dsh.cmd`（不在 PATH 就用完整路径） | `%USERPROFILE%\.dsh\profiles\<profile>` | `C:/Users/<你>/...`（正斜杠或反斜杠都行） |
-| macOS | 安装包提供的 `dsh`（不在 PATH 就找应用包内的 `runtime/cli`） | `~/.dsh/profiles/<profile>` | `/Users/<你>/...` |
-| Linux | 同上 | `~/.dsh/profiles/<profile>` | `/home/<你>/...` |
+- `<profile>` 是 `~/.dsh/profiles/<名字>` 的名字，桌面版一般是 `desktop`；
+- `dsh` 不在 PATH 时用应用目录下的 `resources/runtime/cli/bin/dsh`
+  （Windows 是 `dsh.cmd`）；
+- 装完在 **设置 → 插件** 里能看到 `MCP Server Manager`（行 id `mcp-manager`，状态 active），
+  旁边的 **MCP 服务器** 页签就是本插件的界面。
 
-> `<profile>` 是 `~/.dsh/profiles/<名字>` 里的名字，桌面版通常是 `desktop`。
-> `DSH_HOME` 可以覆盖 `~/.dsh`；在 DSH 自己的 shell 里它和 `DSH_PROFILE_DIR` 都是现成的。
+### 方式 2：让 DSH 自己装
 
-### 三种装法（结果一样，选一种）
-
-#### 方式 1：`dsh plugin add`（推荐，跨平台一条命令）
-
-```sh
-# 有 git
-git clone https://github.com/nekojackie/dsh-mcp-manager.git
-dsh plugin --profile desktop add ./dsh-mcp-manager
-
-# 没有 git：GitHub → Code → Download ZIP，解压后把目录传进去
-dsh plugin --profile desktop add C:/Users/you/Downloads/dsh-mcp-manager
-
-# 装到别的 profile（首次会自动初始化）
-dsh plugin --profile tui add /path/to/dsh-mcp-manager
-```
-
-日常维护也用同一条命令族：
-
-```sh
-dsh plugin --profile desktop list               # 当前装了哪些
-dsh plugin --profile desktop remove dsh-mcp-manager
-dsh --profile desktop --dump-config | grep mcp-manager   # 确认 bundle 与 patch 行都在
-```
-
-#### 方式 2：在应用内让 Agent 装（不想开终端）
-
-让 DSH 助手调用 `plugin_manager`：
-
-```jsonc
-{ "action": "install_bundle", "target": "<仓库绝对路径>" }
-```
-
-`install_bundle` = 装包 + 选中 bundle，和方式 1 等价，只是由 Host 进程执行。
-可以让 Agent 自己定位目录（`DSH_HOME` → `<DSH_HOME>/plugins/dsh-mcp-manager`），
-提示词：
+把下面整段发给 DSH 助手即可，它自己会克隆、安装、重启并汇报：
 
 ```text
-请帮我安装并启用 DSH 插件 dsh-mcp-manager：https://github.com/nekojackie/dsh-mcp-manager
+帮我安装并启用 DSH 插件：https://github.com/nekojackie/dsh-mcp-manager
 
-1. 用环境变量 DSH_HOME 确定目录（没有就用默认 ~/.dsh 或 %USERPROFILE%\.dsh）；
-2. 克隆到 <该目录>/plugins/dsh-mcp-manager（没有 git 就下载 ZIP 解压到同一位置）；
-3. 优先执行：dsh plugin --profile <当前 profile> add <该目录绝对路径>；
-   若 dsh 不可用，则用 plugin_manager 的 install_bundle，target 用该绝对路径；
-4. 装完确认：插件行状态 active、设置里出现「设置 → 插件 → MCP 服务器」页签；
-5. 用 mcp_manager_list 把当前清单贴给我，并告诉我实际用的目录；
-6. 不要改动我已有的 MCP 服务器配置。
-
-注意：这是 AI 生成的插件，OAuth token 会写进 DSH 凭据库，安装前先看 README 的安全说明。
+1. 把仓库克隆到任意目录（例如 ~/.dsh/plugins/dsh-mcp-manager；没有 git 就下载 ZIP 解压）；
+2. 执行 dsh plugin --profile <当前 profile> add <该目录绝对路径>；
+   如果 dsh 命令不可用，改用 plugin_manager 的 install_bundle，target 指向该目录；
+3. 重启 DSH，确认「设置 → 插件」里插件行是 active、并出现「MCP 服务器」页签；
+4. 用 mcp_manager_list 把当前 MCP 服务器清单贴给我；
+5. 不要改动我已有的 MCP 服务器配置。
 ```
 
-#### 方式 3：完全手动（离线 / 受控环境，等价于方式 1）
-
-1. 把仓库放到任意目录（clone 或解压 ZIP）。
-2. 编辑 `…/.dsh/profiles/<profile>/package.json`：
-
-   ```jsonc
-   {
-     "dependencies": {
-       "dsh-mcp-manager": "link:<绝对路径，正斜杠>"
-       // Windows： "link:C:/Users/<你>/.dsh/plugins/dsh-mcp-manager"
-       // macOS/Linux： "link:/home/<你>/.dsh/plugins/dsh-mcp-manager"
-     },
-     "dsh": { "profile": { "bundles": ["...保留原有...", "dsh-mcp-manager"] } }
-   }
-   ```
-
-   > `link:` 是 pnpm 语法，三个平台都写**正斜杠**；只有 npm 时用 `"file:<绝对路径>"`（复制而非软链）。
-
-3. 在 `…/.dsh/profiles/<profile>/cordis.patch.yml` 末尾追加（三个平台一样；如果安装了别的插件，
-   注意 YAML 是数组）：
-
-   ```yaml
-   - insert:
-       - id: mcp-manager
-         name: dsh-mcp-manager
-         config:
-           servers: []
-   ```
-
-4. 装依赖并重启 DSH：
-
-   ```bash
-   # bash / zsh
-   cd "$DSH_PROFILE_DIR" && pnpm install
-   ```
-
-   ```powershell
-   # Windows PowerShell
-   Set-Location $env:DSH_PROFILE_DIR
-   pnpm install
-   ```
-
-   然后**重启 DSH**（不是刷新页面）。
-
-### 关于直接从 GitHub 源安装
-
-`dsh plugin --profile <profile> add github:nekojackie/dsh-mcp-manager` 语法上可行（转发给 pnpm 的
-git 源），但 pnpm 会把 git 包当作"需要构建"的包：要按提示往 profile 的
-`pnpm-workspace.yaml` 里加 `allowBuilds`，我在 Windows 上还实测撞到 `EPERM ... rename`。
-**除非你就是要测 git 源，否则用"先 clone 再 add 本地目录"更稳。**
-
-### 装完怎么验收（三个平台一样）
-
-1. 设置 → 插件 → 列表里能看到 **MCP Server Manager**（行 id `mcp-manager`，状态 active）；
-2. 设置 → 插件 → 出现 **MCP 服务器** 页签；
-3. 对 agent 说「列出 MCP 服务器」，它会调用 `mcp_manager_list`；
-4. 空跑验证：把仓库里的 `fixtures/mock-mcp-server.mjs` 当 `stdio` 服务器加进去
-   （`command: node`，`args: [<该文件绝对路径>]`），应出现 `mcp__<服务器名>__echo` 工具。
-
-> ⚠️ 改了 `lib/*.js` 之后，DSH **不会**热替换已加载的模块：用
-> `plugin_manager set_bundle { "enabled": false }` → `true` 重新加载，或重启 DSH。
+> 这是 AI 生成的插件，OAuth token 会写进 DSH 凭据库，安装前可以先看一眼下面的「安全说明」。
 
 ## 使用
 
